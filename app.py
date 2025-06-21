@@ -1,4 +1,4 @@
-# app.py
+# app.py (Updated Version)
 
 import streamlit as st
 import torch
@@ -52,12 +52,10 @@ class ConditionalVAE(nn.Module):
 # --- Load the Pre-Trained Model ---
 @st.cache_resource
 def load_model():
-    # Set device to CPU, as Streamlit Cloud uses CPU instances
     device = torch.device('cpu')
     model = ConditionalVAE().to(device)
-    # Load the saved state dictionary
     model.load_state_dict(torch.load('cvae_mnist.pth', map_location=device))
-    model.eval() # Set model to evaluation mode
+    model.eval()
     return model
 
 model = load_model()
@@ -66,24 +64,32 @@ model = load_model()
 st.set_page_config(layout="wide")
 st.title("Handwritten Digit Generation using a cVAE")
 
-st.sidebar.header("Controls")
-selected_digit = st.sidebar.selectbox("Select a digit (0-9) to generate", list(range(10)))
+st.markdown("---") # Adds a horizontal line
 
-if st.sidebar.button("Generate Images"):
+# --- Controls on the main page ---
+st.subheader("Controls")
+col1, col2 = st.columns([1, 3]) # Create two columns for layout
+
+with col1:
+    selected_digit = st.selectbox("Select a digit to generate:", list(range(10)))
+
+with col2:
+    # Add some vertical space to align the button better
+    st.write("") 
+    st.write("")
+    generate_button = st.button("Generate Images", type="primary")
+
+st.markdown("---")
+
+# --- Generation and Display Logic ---
+if generate_button:
     st.subheader(f"Generating 5 images for the digit: {selected_digit}")
 
     # Generate images
     with torch.no_grad():
-        # Create random noise vector
         z = torch.randn(5, LATENT_DIM)
-        # Create labels for the selected digit
         label = torch.LongTensor([selected_digit] * 5)
-        
-        # Generate images from the decoder
         generated_images_tensor = model.decode(z, label)
-        
-        # Post-process for display
-        # De-normalize from [-1, 1] to [0, 1]
         generated_images = (generated_images_tensor * 0.5 + 0.5).numpy()
 
     # Display images in 5 columns
